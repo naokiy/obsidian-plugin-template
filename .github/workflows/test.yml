@@ -1,0 +1,102 @@
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+name: release-please
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract-version.outputs.result }}
+      to_modify_pr: ${{ steps.release.outputs.pr && !steps.release.outputs.release_created }}
+      to_modify_release: ${{ steps.release.outputs.release_created }}
+      pr_number: ${{ steps.release.outputs.pr && fromJSON(steps.release.outputs.pr).number || '' }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: google-github-actions/release-please-action@v3
+        id: release
+        with:
+          release-type: node
+          package-name: release-please-test
+          include-v-in-tag: false
+          pull-request-title-pattern: "chore${scope}: :bookmark: release${component} ${version}"
+      - name: Extract Version Number
+        uses: actions/github-script@v6
+        id: extract-version
+        if: ${{ steps.release.outputs.pr || steps.release.outputs.release_created }}
+        env:
+          PR_TITLE: ${{ steps.release.outputs.pr && fromJSON(steps.release.outputs.pr).title || ''}}
+        with:
+          script: |
+            const { PR_TITLE } = process.env
+            let ver = "";
+
+            if (PR_TITLE !== "") {
+              const pr_splitted = PR_TITLE.split(" ");
+              ver = pr_splitted[pr_splitted.length - 1];
+            }
+            if ('${{ steps.release.outputs.release_created }}' !== "") {
+              ver = "${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }}.${{ steps.release.outputs.patch }}"
+            }
+
+            return ver;
+            
+  modify-pr:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.to_modify_pr }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "lts/*"
+      - uses: actions/checkout@v3
+      - name: Install Task
+        uses: arduino/setup-task@v1
+        with:
+          version: 3.x
+      - name: Append file to PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr checkout ${{ needs.release-please.outputs.pr_number }}
+          NEW_VERSION=${{ needs.release-please.outputs.version }} task version-bump-beta
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -am "chore(release): :bookmark: Bump version"
+          git push
+
+  modify-release:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.to_modify_release }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "lts/*"
+      - uses: actions/checkout@v3
+      - name: Install Task
+        uses: arduino/setup-task@v1
+        with:
+          version: 3.x
+      - name: NPM install
+        run:
+          npm ci --no-audit
+      - name: Build
+        run:
+          task build
+      - name: Upload Release Artifact
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run:
+          gh release upload ${{ needs.release-please.outputs.tag_name }} ./dist/*
+      - name: Rename Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run:
+          gh release edit ${{ needs.release-please.outputs.tag_name }} --title ${{ needs.release-please.outputs.version }}
