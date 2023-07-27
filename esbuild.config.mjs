@@ -10,12 +10,13 @@ if you want to view the source, please visit the github repository of this plugi
 `;
 
 const prod = (process.argv[2] === "production");
+const hotreload = (process.argv[2] === "hotreload");
 
 const context = await esbuild.context({
 	banner: {
 		js: banner,
 	},
-	entryPoints: ["main.ts"],
+	entryPoints: ["src/main.ts"],
 	bundle: true,
 	external: [
 		"obsidian",
@@ -37,12 +38,12 @@ const context = await esbuild.context({
 	logLevel: "info",
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
-	outfile: "main.js",
+	outfile: hotreload ? "hotreload/main.js": "dist/main.js",
 });
 
-if (prod) {
+if (hotreload) {
+	await context.watch();
+} else {
 	await context.rebuild();
 	process.exit(0);
-} else {
-	await context.watch();
 }
