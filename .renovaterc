@@ -1,0 +1,43 @@
+{
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": [
+		"config:base"
+	],
+	"timezone": "Asia/Tokyo",
+	"lockFileMaintenance": { "enabled": true },
+	"labels": [
+		"📌 dependencies"
+	],
+	"commitMessagePrefix": "fix(deps): ⬆️",
+	"commitMessageAction": "Upgrade",
+	"packageRules": [
+		{
+		  "matchPackageNames": ["@types/node"],
+		  "allowedVersions": "<=16.11"
+		},
+		{
+			"updateTypes": [
+				"pin"
+			],
+			"commitMessagePrefix": "fix(deps): 📌",
+			"commitMessageAction": "Pin"
+		},
+		{
+			"updateTypes": [
+				"rollback"
+			],
+			"commitMessagePrefix": "fix(deps): ⬇️",
+			"commitMessageAction": "Downgrade"
+		},
+		{
+			"matchUpdateTypes": [
+				"lockFileMaintenance"
+			],
+			"commitMessagePrefix": "chore(deps): 🔨"
+		},
+		{
+			"matchDepTypes": "devDependencies",
+			"commitMessagePrefix": "chore(deps): 🔨"
+		}
+	]
+}
