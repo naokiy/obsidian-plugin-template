@@ -18,7 +18,7 @@
 			"allowedVersions": "<=16.11"
 		},
 		{
-			"matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+			"matchUpdateTypes": ["minor", "patch", "pin", "digest", "lockFileMaintenance"],
 			"automerge": true
 		},
 		{
