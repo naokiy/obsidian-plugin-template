@@ -33,7 +33,7 @@
 		"jest": "29.6.2",
 		"lint-staged": "14.0.1",
 		"mkdirp": "3.0.1",
-		"obsidian": "1.4.0",
+		"obsidian": "1.4.4",
 		"prettier": "3.0.2",
 		"rimraf": "5.0.1",
 		"touch": "3.1.0",
